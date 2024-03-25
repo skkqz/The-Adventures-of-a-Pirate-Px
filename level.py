@@ -118,7 +118,6 @@ class Level:
                 y = row_index * tile_size
 
                 if val == '0':
-                    print(2222)
                     sprite = Player((x, y), self.display_surface, self.create_jump_particles)
                     self.player.add(sprite)
                 if val == '1':
