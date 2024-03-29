@@ -13,7 +13,7 @@ from game_data import levels
 class Level:
     """Класс уровня"""
 
-    def __init__(self, current_level, surface, create_overworld):
+    def __init__(self, current_level, surface, create_overworld, change_coins):
         # Настройка уровня
         self.display_surface = surface  # Установка поверхности для отображения
         # self.setup_level(level_data)  # Инициализация уровня
@@ -35,6 +35,9 @@ class Level:
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
         self.player_setup(player_layout)
+
+        # Пользовательский интерфейс
+        self.change_coins = change_coins
 
         # Установка местности
         terrain_layout = import_csv_layout(level_data['terrain'])
@@ -97,9 +100,9 @@ class Level:
                         sprite = Crate((x, y), tile_size)  # Создание ящика
                     if type_t == 'coins':
                         if val == '0':
-                            sprite = Coin((x, y), tile_size, 'graphics/coins/gold/')
+                            sprite = Coin((x, y), tile_size, 'graphics/coins/gold/', 5)
                         elif val == '1':
-                            sprite = Coin((x, y), tile_size, 'graphics/coins/silver/')
+                            sprite = Coin((x, y), tile_size, 'graphics/coins/silver/', 1)
                     if type_t == 'fg_palms':
                         if val == '1':
                             sprite = Palm((x, y), tile_size, 'graphics/terrain/palm_large', 72)
@@ -269,6 +272,16 @@ class Level:
         if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
             self.create_overworld(self.current_level, self.new_max_level)
 
+    def check_coin_collisions(self):
+        collided_coins = pygame.sprite.spritecollide(self.player.sprite, self.coin_sprites, True)
+        for coin in collided_coins:
+            print(coin)
+            if coin == 0:
+                self.change_coins(coin.value)
+            else:
+                self.change_coins(coin.value)
+            coin.kill()
+
     def run(self):
         """Запуск игрового цикла"""
 
@@ -331,6 +344,7 @@ class Level:
 
         self.check_death()
         self.check_win()
+        self.check_coin_collisions()
 
         # Фон воды
         self.water.draw(self.display_surface, self.world_shift)

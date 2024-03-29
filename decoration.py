@@ -55,6 +55,7 @@ class Sky:
             for cloud in self.clouds:
                 surface.blit(cloud[0], cloud[1])
 
+
 class Water:
     """Класс воды"""
 

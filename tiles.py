@@ -58,11 +58,12 @@ class AnimatedTile(Tile):
 class Coin(AnimatedTile):
     """Класс монеты"""
 
-    def __init__(self, pos, size, path):
+    def __init__(self, pos, size, path, value):
         super().__init__(pos, size, path)
         center_x = pos[0] + int(size // 2)
         center_y = pos[1] + int(size // 2)
         self.rect = self.image.get_rect(center=(center_x, center_y))
+        self.value = value
 
 
 class Palm(AnimatedTile):
