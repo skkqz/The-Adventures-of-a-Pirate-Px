@@ -1,6 +1,6 @@
 import pygame
 
-from tiles import Tile, StaticTile, Crate, Coin, Palm
+from tiles import Tile, StaticTile, Crate, Coin, Palm, Potion, PotionEffect
 from enemy import Enemy
 from settings import tile_size, screen_width, screen_height
 from player import Player
@@ -23,15 +23,18 @@ class Level:
         # Связь с overworld
         self.create_overworld = create_overworld
         self.current_level = current_level
-        level_data = levels[self.current_level]
-        self.new_max_level = level_data['unlock']
+        self.level_data = levels[self.current_level]
+        self.new_max_level = self.level_data['unlock']
 
         # Пыль
         self.dust_sprite = pygame.sprite.GroupSingle()
         self.player_on_ground = False
 
+        # Эффект поднятия
+        self.potion_effect_sprite = pygame.sprite.GroupSingle()
+
         # Установка игрока
-        player_layout = import_csv_layout(level_data['player'])
+        player_layout = import_csv_layout(self.level_data['player'])
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
         self.player_setup(player_layout)
@@ -40,35 +43,40 @@ class Level:
         self.change_coins = change_coins
 
         # Установка местности
-        terrain_layout = import_csv_layout(level_data['terrain'])
+        terrain_layout = import_csv_layout(self.level_data['terrain'])
         self.terrain_sprites = self.create_title_group(terrain_layout, 'terrain')
 
         # Установка травы
-        grass_layout = import_csv_layout(level_data['grass'])
+        grass_layout = import_csv_layout(self.level_data['grass'])
         self.grass_sprites = self.create_title_group(grass_layout, 'grass')
 
         # Установка ящиков
-        crate_layout = import_csv_layout(level_data['crates'])
+        crate_layout = import_csv_layout(self.level_data['crates'])
         self.crate_sprites = self.create_title_group(crate_layout, 'crates')
 
+        # Установка бутылок зелья
+        if self.level_data.get('potions'):
+            potion_layout = import_csv_layout(self.level_data['potions'])
+            self.potion_sprites = self.create_title_group(potion_layout, 'potions')
+
         # Установка монет
-        coin_layout = import_csv_layout(level_data['coins'])
+        coin_layout = import_csv_layout(self.level_data['coins'])
         self.coin_sprites = self.create_title_group(coin_layout, 'coins')
 
         # Установка пальм переднего плана
-        fg_palms_layout = import_csv_layout(level_data['fg_palms'])
+        fg_palms_layout = import_csv_layout(self.level_data['fg_palms'])
         self.fg_palms_sprites = self.create_title_group(fg_palms_layout, 'fg_palms')
 
         # Установка пальм заднего фона
-        bg_palms_layout = import_csv_layout(level_data['bg_palms'])
+        bg_palms_layout = import_csv_layout(self.level_data['bg_palms'])
         self.bg_palms_sprites = self.create_title_group(bg_palms_layout, 'bg_palms')
 
         # Установка врагов
-        enemy_layout = import_csv_layout(level_data['enemies'])
+        enemy_layout = import_csv_layout(self.level_data['enemies'])
         self.enemy_sprites = self.create_title_group(enemy_layout, 'enemies')
 
         # Ограничение для врагов
-        constraint_layout = import_csv_layout(level_data['constraints'])
+        constraint_layout = import_csv_layout(self.level_data['constraints'])
         self.constraint_sprites = self.create_title_group(constraint_layout, 'constraints')
 
         # Задний фон
@@ -103,6 +111,8 @@ class Level:
                             sprite = Coin((x, y), tile_size, 'graphics/coins/gold/', 5)
                         elif val == '1':
                             sprite = Coin((x, y), tile_size, 'graphics/coins/silver/', 1)
+                    if type_t == 'potions':
+                        sprite = Potion((x, y), tile_size, 'graphics/potion/Red Potion')
                     if type_t == 'fg_palms':
                         if val == '1':
                             sprite = Palm((x, y), tile_size, 'graphics/terrain/palm_large', 72)
@@ -273,14 +283,25 @@ class Level:
             self.create_overworld(self.current_level, self.new_max_level)
 
     def check_coin_collisions(self):
+        """Проверка поднятия монеты"""
         collided_coins = pygame.sprite.spritecollide(self.player.sprite, self.coin_sprites, True)
         for coin in collided_coins:
-            print(coin)
             if coin == 0:
                 self.change_coins(coin.value)
             else:
                 self.change_coins(coin.value)
             coin.kill()
+
+    def check_potion_collisions(self):
+        """Проверка поднятия банки зелья"""
+        collided_potions = pygame.sprite.spritecollide(self.player.sprite, self.potion_sprites, True)
+        for potion in collided_potions:
+            if potion:
+                potion_effect = PotionEffect((potion.rect.center), tile_size, 'graphics/potion/Potion Effect')
+
+                potion.kill()
+                self.potion_effect_sprite.add(potion_effect)
+
 
     def run(self):
         """Запуск игрового цикла"""
@@ -311,6 +332,14 @@ class Level:
         # Монеты
         self.coin_sprites.draw(self.display_surface)
         self.coin_sprites.update(self.world_shift)
+
+        # Бутылки с зельем
+        if self.level_data.get('potions'):
+            self.potion_sprites.draw(self.display_surface)
+            self.potion_sprites.update(self.world_shift)
+
+        self.potion_effect_sprite.draw(self.display_surface)
+        self.potion_effect_sprite.update(self.world_shift)
 
         # Враги
         self.enemy_sprites.draw(self.display_surface)
@@ -345,6 +374,7 @@ class Level:
         self.check_death()
         self.check_win()
         self.check_coin_collisions()
+        self.check_potion_collisions()
 
         # Фон воды
         self.water.draw(self.display_surface, self.world_shift)

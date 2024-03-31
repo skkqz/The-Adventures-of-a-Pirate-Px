@@ -4,7 +4,7 @@ from csv import reader
 from settings import tile_size
 
 
-def import_folder(path):
+def import_folder(path, scale=None):
 
     surface_list = []
 
@@ -12,6 +12,9 @@ def import_folder(path):
         for image in img_files:
             full_path = path + '/' + image  # Полный путь к изображению
             image_surf = pygame.image.load(full_path).convert_alpha()
+            if scale:
+                image_surf = pygame.transform.scale(image_surf, (int(image_surf.get_width() * scale),
+                                                                 int(image_surf.get_height()) * scale))
             surface_list.append(image_surf)
 
     return surface_list

@@ -73,3 +73,29 @@ class Palm(AnimatedTile):
         super().__init__(pos, size, path)
         center_y = pos[1] - offset
         self.rect.topleft = (pos[0], center_y)
+
+
+class Potion(AnimatedTile):
+    """Класс зелья"""
+
+    def __init__(self, pos, size, path):
+        super().__init__(pos, size, path)
+        self.frames = import_folder(path, 2.5)
+        self.rect = self.image.get_rect(center=(pos[0] + int(size // 2), pos[1] + 20))
+
+
+class PotionEffect(AnimatedTile):
+
+    def __init__(self, pos, size, path):
+        super().__init__(pos, size, path)
+
+    def animate(self):
+        self.frame_index += 0.10
+
+        if self.frame_index < len(self.frames):
+            self.image = self.frames[int(self.frame_index)]
+        else:
+            self.kill()
+    #
+    # def update(self, x_shift):
+    #     self.rect.x += x_shift
