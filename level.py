@@ -1,6 +1,6 @@
 import pygame
 
-from tiles import Tile, StaticTile, Crate, Coin, Palm, Potion, PotionEffect
+from tiles import Tile, StaticTile, Crate, Coin, Palm, Potion, SelectionEffect
 from enemy import Enemy
 from settings import tile_size, screen_width, screen_height
 from player import Player
@@ -30,9 +30,6 @@ class Level:
         self.dust_sprite = pygame.sprite.GroupSingle()
         self.player_on_ground = False
 
-        # Эффект поднятия
-        self.potion_effect_sprite = pygame.sprite.GroupSingle()
-
         # Установка игрока
         player_layout = import_csv_layout(self.level_data['player'])
         self.player = pygame.sprite.GroupSingle()
@@ -58,6 +55,9 @@ class Level:
         if self.level_data.get('potions'):
             potion_layout = import_csv_layout(self.level_data['potions'])
             self.potion_sprites = self.create_title_group(potion_layout, 'potions')
+
+        # Эффект поднятия
+        self.selection_effect_sprite = pygame.sprite.Group()
 
         # Установка монет
         coin_layout = import_csv_layout(self.level_data['coins'])
@@ -286,22 +286,24 @@ class Level:
         """Проверка поднятия монеты"""
         collided_coins = pygame.sprite.spritecollide(self.player.sprite, self.coin_sprites, True)
         for coin in collided_coins:
+            coin_effect = SelectionEffect((coin.rect.centerx - 10, coin.rect.centery - 5), tile_size,
+                                          'graphics/coins/Coin Effect')
             if coin == 0:
                 self.change_coins(coin.value)
             else:
                 self.change_coins(coin.value)
             coin.kill()
+            self.selection_effect_sprite.add(coin_effect)
 
     def check_potion_collisions(self):
         """Проверка поднятия банки зелья"""
         collided_potions = pygame.sprite.spritecollide(self.player.sprite, self.potion_sprites, True)
         for potion in collided_potions:
             if potion:
-                potion_effect = PotionEffect((potion.rect.center), tile_size, 'graphics/potion/Potion Effect')
+                potion_effect = SelectionEffect(potion.rect.center, tile_size, 'graphics/potion/Potion Effect')
 
                 potion.kill()
-                self.potion_effect_sprite.add(potion_effect)
-
+                self.selection_effect_sprite.add(potion_effect)
 
     def run(self):
         """Запуск игрового цикла"""
@@ -335,11 +337,14 @@ class Level:
 
         # Бутылки с зельем
         if self.level_data.get('potions'):
+            self.check_potion_collisions()
+
             self.potion_sprites.draw(self.display_surface)
             self.potion_sprites.update(self.world_shift)
 
-        self.potion_effect_sprite.draw(self.display_surface)
-        self.potion_effect_sprite.update(self.world_shift)
+        # Анимация поднятия зелья
+        self.selection_effect_sprite.draw(self.display_surface)
+        self.selection_effect_sprite.update(self.world_shift)
 
         # Враги
         self.enemy_sprites.draw(self.display_surface)
@@ -374,7 +379,6 @@ class Level:
         self.check_death()
         self.check_win()
         self.check_coin_collisions()
-        self.check_potion_collisions()
 
         # Фон воды
         self.water.draw(self.display_surface, self.world_shift)
