@@ -75,6 +75,9 @@ class Level:
         enemy_layout = import_csv_layout(self.level_data['enemies'])
         self.enemy_sprites = self.create_title_group(enemy_layout, 'enemies')
 
+        # Взрыв врагов
+        self.explosion_sprite = pygame.sprite.Group()
+
         # Ограничение для врагов
         constraint_layout = import_csv_layout(self.level_data['constraints'])
         self.constraint_sprites = self.create_title_group(constraint_layout, 'constraints')
@@ -305,6 +308,25 @@ class Level:
                 potion.kill()
                 self.selection_effect_sprite.add(potion_effect)
 
+    def check_enemy_collisions(self):
+        """Проверка столкновений с врагом"""
+
+        enemy_collisions = pygame.sprite.spritecollide(self.player.sprite, self.enemy_sprites, False)
+
+        if enemy_collisions:
+            for enemy in enemy_collisions:
+                enemy_center = enemy.rect.centery
+                enemy_top = enemy.rect.top
+                player_bottom = self.player.sprite.rect.bottom
+
+                # Если игрок находится сверху врага и меньше центра, то враг умирает
+                if enemy_top < player_bottom < enemy_center and self.player.sprite.direction.y >= 0:
+                    self.player.sprite.direction.y = -15
+                    explosion_sprite = ParticleEffect(enemy.rect.center, 'explosion', 0.50)
+                    self.explosion_sprite.add(explosion_sprite)
+
+                    enemy.kill()
+
     def run(self):
         """Запуск игрового цикла"""
 
@@ -349,6 +371,8 @@ class Level:
         # Враги
         self.enemy_sprites.draw(self.display_surface)
         self.enemy_sprites.update(self.world_shift)
+        self.explosion_sprite.draw(self.display_surface)
+        self.explosion_sprite.update(self.world_shift)
 
         # Ограничение движения врагов
         # self.constraint_sprites.draw(self.display_surface) # Не нужно отрисовывать, чтобы не видно было плитку
@@ -379,6 +403,7 @@ class Level:
         self.check_death()
         self.check_win()
         self.check_coin_collisions()
+        self.check_enemy_collisions()
 
         # Фон воды
         self.water.draw(self.display_surface, self.world_shift)
