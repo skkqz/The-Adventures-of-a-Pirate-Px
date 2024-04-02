@@ -1,11 +1,12 @@
 import pygame
+from math import sin
 from support import import_folder
 
 
 class Player(pygame.sprite.Sprite):
     """Класс игрока"""
 
-    def __init__(self, pos, surface, crate_jum_particles):
+    def __init__(self, pos, surface, crate_jum_particles, change_health):
         super().__init__()
         self.import_character_asserts()  # Импорт ассетов персонажа
         self.frame_index = 0  # Индекс текущего кадра анимации
@@ -33,6 +34,12 @@ class Player(pygame.sprite.Sprite):
         self.on_ceiling = False  # Находится ли игрок под потолком
         self.on_left = False  # Находится ли игрок у левой стены
         self.on_right = False  # Находится ли игрок у правой стены
+
+        # Управление здоровьем
+        self.change_health = change_health
+        self.invincible = False
+        self.invincibility_duration = 500
+        self.hurt_time = 0
 
     def import_character_asserts(self):
         """Загрузка анимаций персонажа"""
@@ -70,6 +77,12 @@ class Player(pygame.sprite.Sprite):
             # Если персонаж смотрит влево, отражаем изображение по горизонтали
             flipped_image = pygame.transform.flip(image, True, False)
             self.image = flipped_image
+
+        if self.invincible:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
 
         # Обновление прямоугольника персонажа в зависимости от его положения на экране
         if self.on_ground and self.on_right:
@@ -145,6 +158,32 @@ class Player(pygame.sprite.Sprite):
 
         self.direction.y = self.jump_speed
 
+    def get_damage(self):
+        """Получить урон"""
+
+        if not self.invincible:
+            self.change_health(-10)
+            self.invincible = True
+            self.hurt_time = pygame.time.get_ticks()
+
+    def invincibility_timer(self):
+
+        if self.invincible:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.hurt_time >= self.invincibility_duration:
+                self.invincible = False
+
+    @staticmethod
+    def wave_value():
+        """Волна sin"""
+
+        value = sin(pygame.time.get_ticks())
+
+        if value >= 0:
+            return 255
+        else:
+            return 0
+
     def update(self):
         """Обновление состояния игрока"""
 
@@ -152,3 +191,5 @@ class Player(pygame.sprite.Sprite):
         self.get_status()  # Определение текущего статуса игрока
         self.animate()  # Анимация игрока
         self.run_dust_animate()  # Анимация частиц пыли при беге
+        self.invincibility_timer()
+        self.wave_value()

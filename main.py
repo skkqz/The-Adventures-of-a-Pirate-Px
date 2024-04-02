@@ -27,7 +27,7 @@ class Game:
     def create_level(self, current_level):
         """Создание уровня"""
 
-        self.level = Level(current_level, screen, self.create_overworld, self.change_coins)
+        self.level = Level(current_level, screen, self.create_overworld, self.change_coins, self.change_health)
         self.status = 'level'
 
     def create_overworld(self, current_level, new_max_level):
@@ -39,6 +39,18 @@ class Game:
     def change_coins(self, amount):
         self.coins += amount
 
+    def change_health(self, amount):
+        self.cor_health += amount
+
+    def check_game_over(self):
+        if self.cor_health <=0:
+            self.cor_health = 100
+            self.coins = 0
+            self.max_level = 0
+
+            self.overworld = OverWorld(0, self.max_level, screen, self.create_level)
+            self.status = 'overworld'
+
     def run(self):
 
         if self.status == 'overworld':
@@ -47,6 +59,7 @@ class Game:
             self.level.run()
             self.ui.show_health(self.cor_health, self.max_health)
             self.ui.show_coins(self.coins)
+            self.check_game_over()
 
 
 pygame.init()
