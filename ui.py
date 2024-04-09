@@ -9,7 +9,9 @@ class UI:
         self.display_surface = surface
 
         # Здоровье
-        self.heath_bar = pygame.image.load('graphics/ui/health_bar.png').convert_alpha()
+        # self.heath_bar = pygame.image.load('graphics/ui/health_bar.png').convert_alpha()
+        self.heath_bar = pygame.image.load('graphics/ui/11-Health Bar/Health Bar.png').convert_alpha()
+        self.heart = pygame.image.load('graphics/ui/11-Health Bar/Heart.png').convert_alpha()
         self.health_bar_topleft = (54, 39)
         self.bar_max_width = 152
         self.bar_height = 4
@@ -19,12 +21,21 @@ class UI:
         self.coin_rect = self.coin.get_rect(topleft=(50, 61))
         self.font = pygame.font.Font('graphics/ui/ARCADEPI.TTF', 20)
 
-    def show_health(self, current, full):
+    # def show_health(self, current, full):
+    #     self.display_surface.blit(self.heath_bar, (20, 10))
+    #     current_health_ratio = current / full
+    #     current_bar_width = self.bar_max_width * current_health_ratio  # Вычисление здоровья
+    #     health_bar_rect = pygame.Rect(self.health_bar_topleft, (current_bar_width, self.bar_height))
+    #     pygame.draw.rect(self.display_surface, '#dc4949', health_bar_rect)
+
+    def show_health(self, current):
         self.display_surface.blit(self.heath_bar, (20, 10))
-        current_health_ratio = current / full
-        current_bar_width = self.bar_max_width * current_health_ratio  # Вычисление здоровья
-        health_bar_rect = pygame.Rect(self.health_bar_topleft, (current_bar_width, self.bar_height))
-        pygame.draw.rect(self.display_surface, '#dc4949', health_bar_rect)
+        range_x = 0
+        x = self.heath_bar.get_rect().x + 60
+        y = self.heath_bar.get_rect().centery
+        for i in range(current):
+            self.display_surface.blit(self.heart, (x + range_x, y))
+            range_x += 25
 
     def show_coins(self, amount):
         self.display_surface.blit(self.coin, self.coin_rect)
