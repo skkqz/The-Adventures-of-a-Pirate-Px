@@ -162,9 +162,14 @@ class Player(pygame.sprite.Sprite):
         """Получить урон"""
 
         if not self.invincible:
-            self.change_health(-10)
+            self.change_health('damage')
             self.invincible = True
             self.hurt_time = pygame.time.get_ticks()
+
+    def get_treatment(self):
+        """Лечение"""
+
+        self.change_health('')
 
     def invincibility_timer(self):
 

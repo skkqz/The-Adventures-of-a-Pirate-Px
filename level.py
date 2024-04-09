@@ -1,6 +1,6 @@
 import pygame
 
-from tiles import Tile, StaticTile, Crate, Coin, Palm, Potion, SelectionEffect
+from tiles import Tile, StaticTile, Crate, Coin, Palm, Potion, SelectionEffect, Heart
 from enemy import Enemy
 from settings import tile_size, screen_width, screen_height
 from player import Player
@@ -13,7 +13,7 @@ from game_data import levels
 class Level:
     """Класс уровня"""
 
-    def __init__(self, current_level, surface, create_overworld, change_coins, change_health):
+    def __init__(self, current_level, surface, create_overworld, change_coins, change_health, uplift):
         # Настройка уровня
         self.display_surface = surface  # Установка поверхности для отображения
         # self.setup_level(level_data)  # Инициализация уровня
@@ -34,7 +34,9 @@ class Level:
         player_layout = import_csv_layout(self.level_data['player'])
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
-        self.player_setup(player_layout, change_health)
+        self.change_health = change_health
+        self.player_setup(player_layout, self.change_health)
+        self.uplift = uplift
 
         # Пользовательский интерфейс
         self.change_coins = change_coins
@@ -55,6 +57,11 @@ class Level:
         if self.level_data.get('potions'):
             potion_layout = import_csv_layout(self.level_data['potions'])
             self.potion_sprites = self.create_title_group(potion_layout, 'potions')
+
+        # Установка сердца
+        if self.level_data.get('hearts'):
+            heart_layout = import_csv_layout(self.level_data['hearts'])
+            self.heart_sprites = self.create_title_group(heart_layout, 'hearts')
 
         # Эффект поднятия
         self.selection_effect_sprite = pygame.sprite.Group()
@@ -127,6 +134,8 @@ class Level:
                         sprite = Enemy((x, y), tile_size, 'graphics/enemy/run')
                     if type_t == 'constraints':
                         sprite = Tile((x, y), tile_size)
+                    if type_t == 'hearts':
+                        sprite = Heart((x, y), tile_size, 'graphics/ui/17-Heart/1-Idle')
 
                     sprite_group.add(sprite)
 
@@ -143,7 +152,7 @@ class Level:
                     sprite = Player((x, y), self.display_surface, self.create_jump_particles, change_health)
                     self.player.add(sprite)
                 if val == '1':
-                    hut_surface = pygame.image.load('graphics/character/hat.png')
+                    hut_surface = pygame.image.load('graphics/character/hat.png').convert_alpha()
                     sprite = StaticTile((x, y), tile_size, hut_surface)
                     self.goal.add(sprite)
 
@@ -277,16 +286,21 @@ class Level:
                 enemy.reverse()
 
     def check_death(self):
+        """Проверка на смерть персонажа"""
 
         if self.player.sprite.rect.top > screen_height:
+            self.change_health('game_over')
             self.create_overworld(self.current_level, 0)
 
     def check_win(self):
+        """Проверка на пройденный уровень"""
+
         if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
             self.create_overworld(self.current_level, self.new_max_level)
 
     def check_coin_collisions(self):
         """Проверка поднятия монеты"""
+
         collided_coins = pygame.sprite.spritecollide(self.player.sprite, self.coin_sprites, True)
         for coin in collided_coins:
             coin_effect = SelectionEffect((coin.rect.centerx - 10, coin.rect.centery - 5), tile_size,
@@ -300,12 +314,16 @@ class Level:
 
     def check_potion_collisions(self):
         """Проверка поднятия банки зелья"""
-        collided_potions = pygame.sprite.spritecollide(self.player.sprite, self.potion_sprites, True)
-        for potion in collided_potions:
-            if potion:
+
+        check_uplift = self.uplift()
+        if check_uplift:
+            collided_potions = pygame.sprite.spritecollide(self.player.sprite, self.heart_sprites, True)
+            for potion in collided_potions:
+
                 potion_effect = SelectionEffect(potion.rect.center, tile_size, 'graphics/potion/Potion Effect')
 
                 potion.kill()
+                self.player.sprite.get_treatment()
                 self.selection_effect_sprite.add(potion_effect)
 
     def check_enemy_collisions(self):
@@ -365,6 +383,12 @@ class Level:
 
             self.potion_sprites.draw(self.display_surface)
             self.potion_sprites.update(self.world_shift)
+
+        # Сердце
+        if self.level_data.get('hearts'):
+            self.check_potion_collisions()
+            self.heart_sprites.draw(self.display_surface)
+            self.heart_sprites.update(self.world_shift)
 
         # Анимация поднятия зелья
         self.selection_effect_sprite.draw(self.display_surface)

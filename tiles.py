@@ -96,3 +96,12 @@ class SelectionEffect(AnimatedTile):
             self.image = self.frames[int(self.frame_index)]
         else:
             self.kill()
+
+
+class Heart(AnimatedTile):
+    """Класс Сердце"""
+
+    def __init__(self, pos, size, path):
+        super().__init__(pos, size, path)
+        self.frames = import_folder(path, 1.3)
+        self.rect = self.image.get_rect(center=(pos[0] + int(size // 2), pos[1] + 20))

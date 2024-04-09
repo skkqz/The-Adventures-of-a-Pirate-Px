@@ -12,10 +12,15 @@ class Game:
 
     def __init__(self):
 
+        # # Игровые атрибуты
+        # self.max_level = 0
+        # self.max_health = 100
+        # self.cor_health = 100
+        # self.coins = 0
+
         # Игровые атрибуты
         self.max_level = 0
-        self.max_health = 100
-        self.cor_health = 100
+        self.cor_health = 3
         self.coins = 0
 
         # Внешний мир
@@ -27,7 +32,8 @@ class Game:
     def create_level(self, current_level):
         """Создание уровня"""
 
-        self.level = Level(current_level, screen, self.create_overworld, self.change_coins, self.change_health)
+        self.level = Level(current_level, screen, self.create_overworld,
+                           self.change_coins, self.change_health, self.uplift)
         self.status = 'level'
 
     def create_overworld(self, current_level, new_max_level):
@@ -40,11 +46,25 @@ class Game:
         self.coins += amount
 
     def change_health(self, amount):
-        self.cor_health += amount
+
+        if amount == 'damage':
+            self.cor_health -= 1
+        elif amount == 'game_over':
+            self.cor_health = 0
+        else:
+            if self.cor_health < 3:
+                self.cor_health += 1
+
+    def uplift(self):
+
+        if self.cor_health == 3:
+            return False
+        else:
+            return True
 
     def check_game_over(self):
-        if self.cor_health <=0:
-            self.cor_health = 100
+        if self.cor_health <= 0:
+            self.cor_health = 3
             self.coins = 0
             self.max_level = 0
 
@@ -57,7 +77,7 @@ class Game:
             self.overworld.run()
         else:
             self.level.run()
-            self.ui.show_health(self.cor_health, self.max_health)
+            self.ui.show_health(self.cor_health)
             self.ui.show_coins(self.coins)
             self.check_game_over()
 
